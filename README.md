@@ -17,7 +17,7 @@ A React-based frontend application for browsing and interacting with dog data, f
 
 1. Clone the repository:
 
-git clone https://github.com/seeddhee/fetch-dogs.git
+git clone https://github.com/SeeddheeCodes/Fetch-FE.git
 cd fetch-dogs
 
 
@@ -64,7 +64,6 @@ npm run build
   - Netlify
   - Vercel
   - AWS Amplify
-- Ensure environment variables are configured
 
 ## Troubleshooting
 
@@ -98,9 +97,6 @@ npm run build
 - All API requests use secure, httpOnly cookies
 - CSRF protection implemented
 - Credentials sent only via HTTPS
-
-## License
-MIT License - See LICENSE file for details
 
 ## Contact
 - Project Maintainer: Siddhi Kulkarni
