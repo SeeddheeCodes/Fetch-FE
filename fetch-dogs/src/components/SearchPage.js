@@ -370,7 +370,7 @@ const SearchPage = () => {
         credentials: 'include',
         body: JSON.stringify({
           zip_code: zipCode,
-          mile_radius: Number(radius)  // Ensure radius is a number
+          mile_radius: Number(radius) 
         })
       });
 
@@ -399,7 +399,7 @@ const SearchPage = () => {
     return `${location.city}, ${location.state}`;
   };
 
-  // Rest of the component remains the same, but update the Card rendering:
+ 
   const renderDogCard = (dog) => (
     <Grid item xs={12} sm={6} md={4} lg={3} key={dog.id}>
       <Card>
