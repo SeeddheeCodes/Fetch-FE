@@ -121,6 +121,7 @@ const SearchPage = () => {
   const [maxDistance, setMaxDistance] = useState(50);
   const [currentTab, setCurrentTab] = useState('search'); 
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
+  const dogsPerPage = 20;
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
   };
@@ -242,7 +243,7 @@ const SearchPage = () => {
     setFavorites(prev => {
       const isCurrentlyFavorited = prev.some(fav => fav.id === dog.id);
       if (isCurrentlyFavorited) {
-        return prev.filter(fav => fav.id !== dog.id); // Fixed the logic here
+        return prev.filter(fav => fav.id !== dog.id); 
       }
       return [...prev, dog];
     });
@@ -287,75 +288,77 @@ const SearchPage = () => {
 
   const fetchDogs = async () => {
     setIsLoading(true);
+    setError('');
     try {
-      let zipCodes = [];
-      if (selectedLocation) {
-        zipCodes = await getNearbyZipCodes(selectedLocation.zip_code, maxDistance);
-        if (zipCodes.length === 0) {
-          setDogs([]);
-          setTotalPages(0);
-          setError('No locations found within the selected radius');
-          return;
+        let zipCodes = [];
+        if (selectedLocation) {
+            zipCodes = await getNearbyZipCodes(selectedLocation.zip_code, maxDistance);
+            if (zipCodes.length === 0) {
+                setError('No locations found within the selected radius');
+           
+            }
         }
-      }
 
-      const searchParams = new URLSearchParams({
-        size: 20,
-        sort: sortOrder,
-      });
-      
-      if (selectedBreeds.length > 0) {
-        selectedBreeds.forEach(breed => searchParams.append('breeds', breed));
-      }
+        const searchParams = new URLSearchParams({
+            size: dogsPerPage, 
+            from: (page - 1) * dogsPerPage,
+            sort: sortOrder,
+        });
 
-      if (zipCodes.length > 0) {
-        zipCodes.forEach(zip => searchParams.append('zipCodes', zip));
-      }
+        if (selectedBreeds.length > 0) {
+            selectedBreeds.forEach(breed => searchParams.append('breeds', breed));
+        }
 
-      const searchResponse = await fetch(
-        `https://frontend-take-home-service.fetch.com/dogs/search?${searchParams}`,
-        { credentials: 'include' }
-      );
+        if (zipCodes.length > 0) {
+            zipCodes.forEach(zip => searchParams.append('zipCodes', zip));
+        } else if (selectedLocation) {
+            searchParams.append('zipCodes', selectedLocation.zip_code);
+        }
 
-      if (!searchResponse.ok) {
-        const errorText = await searchResponse.text();
-        throw new Error(`Search failed: ${errorText}`);
-      }
-      
-      const { resultIds, total } = await searchResponse.json();
-      setTotalPages(Math.ceil(total / 20));
+        const searchResponse = await fetch(
+            `https://frontend-take-home-service.fetch.com/dogs/search?${searchParams}`,
+            { credentials: 'include' }
+        );
 
-      if (resultIds.length === 0) {
-        setDogs([]);
-        return;
-      }
+        if (!searchResponse.ok) {
+            throw new Error(`Search failed: ${await searchResponse.text()}`);
+        }
 
-      const dogsResponse = await fetch('https://frontend-take-home-service.fetch.com/dogs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(resultIds)
-      });
+        const { resultIds, total } = await searchResponse.json();
+        setTotalPages(Math.ceil(total / dogsPerPage));
 
-      if (!dogsResponse.ok) {
-        const errorText = await dogsResponse.text();
-        throw new Error(`Failed to fetch dog details: ${errorText}`);
-      }
-      
-      const dogData = await dogsResponse.json();
-      
-      // Fetch location details for all dogs
-      await fetchLocationDetails(dogData.map(dog => dog.zip_code));
-      
-      setDogs(dogData);
+        if (resultIds.length === 0) {
+            setDogs([]);
+            setError('No dogs found matching your criteria');
+            return;
+        }
+
+        const dogsResponse = await fetch('https://frontend-take-home-service.fetch.com/dogs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(resultIds)
+        });
+
+        if (!dogsResponse.ok) {
+            throw new Error(`Failed to fetch dog details: ${await dogsResponse.text()}`);
+        }
+
+        const dogData = await dogsResponse.json();
+
+        await fetchLocationDetails(dogData.map(dog => dog.zip_code));
+
+        setDogs(dogData);
+        setError(''); // Clear any previous error if dogs are found
     } catch (err) {
-      console.error('Error fetching dogs:', err);
-      setError(err.message);
-      setDogs([]);
+        console.error('Error fetching dogs:', err);
+        setError(err.message);
+        setDogs([]);
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
-  };
+};
+
 
 
   // Helper function to get nearby zip codes
